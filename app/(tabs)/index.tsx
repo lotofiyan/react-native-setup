@@ -1,98 +1,215 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import {
+  GSButton,
+  GSCard,
+  GSChip,
+  GSTag,
+  SectionHeader,
+  StatPill,
+} from "@/components/ui/gs-primitives";
+
+const quickActions = [
+  { label: "Preview components", icon: "grid", route: "/(tabs)/explore" },
+  {
+    label: "View profile",
+    icon: "person-circle-outline",
+    route: "/(tabs)/profile",
+  },
+  { label: "Auth flows", icon: "log-in-outline", route: "/auth/login" },
+];
+
+const flows = [
+  {
+    title: "Auth screens",
+    badge: "Complete",
+    tone: "success" as const,
+    description:
+      "Sign in, sign up, password reset, and OTP variations built with gluestack tokens.",
+  },
+  {
+    title: "Dashboard blocks",
+    badge: "In progress",
+    tone: "warning" as const,
+    description:
+      "Cards, stats, CTA banners, and activity strips ready for reuse.",
+  },
+  {
+    title: "Settings & profile",
+    badge: "Ready",
+    tone: "info" as const,
+    description:
+      "Account summary, toggles, notification preferences, and support shortcuts.",
+  },
+];
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { colorScheme, setColorScheme } = useColorScheme();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  return (
+    <SafeAreaView className="flex-1 bg-background-0">
+      <ScrollView
+        className="flex-1 px-4 py-5"
+        contentContainerStyle={{
+          paddingBottom: 32,
+        }}
+      >
+        <View className="gap-5">
+          <View className="flex-row items-center justify-between">
+            <View className="gap-1">
+              <Text className="text-2xl font-semibold text-typography-900">
+                Gluestack Starter
+              </Text>
+              <Text className="text-base text-typography-500">
+                Curated screens ready to drop in
+              </Text>
+            </View>
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 shadow-hard-2">
+              <Ionicons name="sparkles" size={22} color="#fff" />
+            </View>
+          </View>
+          <GSCard className="gap-3 border-primary-400 bg-primary-600 shadow-soft-2">
+            <GSTag
+              label="Build faster"
+              tone="neutral"
+              className="border border-white/20 bg-white/10 text-white"
+            />
+            <Text className="text-xl font-semibold text-white">
+              Drop in gluestack UI patterns for a polished app shell.
+            </Text>
+            <Text className="text-base text-white/80">
+              Ship with pre-styled hero, stats, cards, and settings blocks that
+              inherit your theme.
+            </Text>
+            <View className="mt-2 flex-row gap-3">
+              <GSButton
+                label="Browse components"
+                variant="outline"
+                textClassName="text-white"
+                className="border-white/50 bg-white/10"
+                onPress={() => router.push("/(tabs)/explore")}
+              />
+              <GSButton
+                label="View profile"
+                variant="ghost"
+                tone="neutral"
+                className="bg-white"
+                textClassName="text-primary-700"
+                onPress={() => router.push("/(tabs)/profile")}
+              />
+            </View>
+          </GSCard>
+          <View>
+            <SectionHeader
+              title="Snapshot"
+              subtitle="Quick glance at the starter modules"
+              action={
+                <GSTag
+                  label="Up to date"
+                  tone="success"
+                  className="border border-success-200 bg-success-50"
+                />
+              }
+            />
+            <View className="flex-row flex-wrap gap-3">
+              <View className="w-[48%] flex-1">
+                <StatPill label="Components" value="18" delta="+4 this week" />
+              </View>
+              <View className="w-[48%] flex-1">
+                <StatPill
+                  label="Flows"
+                  value="6"
+                  tone="success"
+                  delta="QA passed"
+                />
+              </View>
+              <View className="w-[48%] flex-1">
+                <StatPill
+                  label="Themes"
+                  value="Light & Dark"
+                  tone="warning"
+                  delta="Adaptive"
+                />
+              </View>
+            </View>
+          </View>
+          <View className="">
+            <GSButton
+              label="Toggle theme"
+              icon="eye"
+              variant="outline"
+              onPress={() =>
+                setColorScheme(colorScheme === "dark" ? "light" : "dark")
+              }
+            />
+          </View>
+          <View className="">
+            <GSButton
+              label="Open Storybook"
+              icon="book"
+              variant="solid"
+              onPress={() => router.push("/storybook")}
+            />
+          </View>
+
+          <View className="gap-3">
+            <SectionHeader
+              title="Quick actions"
+              subtitle="Jump into popular starter pages"
+              action={
+                <Ionicons name="arrow-forward" size={18} color="#1F2937" />
+              }
+            />
+            <View className="flex-row flex-wrap gap-2">
+              {quickActions.map((action) => (
+                <GSChip
+                  key={action.label}
+                  icon={action.icon as keyof typeof Ionicons.glyphMap}
+                  label={action.label}
+                  onPress={() => router.push(action.route)}
+                />
+              ))}
+            </View>
+          </View>
+          <View className="gap-3">
+            <SectionHeader
+              title="Starter flows"
+              subtitle="Preview how the gluestack kit looks in-app"
+            />
+            {flows.map((flow) => (
+              <GSCard key={flow.title} className="gap-3">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-lg font-semibold text-typography-900">
+                    {flow.title}
+                  </Text>
+                  <GSTag label={flow.badge} tone={flow.tone} />
+                </View>
+                <Text className="text-base text-typography-500">
+                  {flow.description}
+                </Text>
+                <View className="flex-row gap-2">
+                  <GSButton
+                    label="Preview"
+                    icon="eye"
+                    variant="outline"
+                    onPress={() => router.push("/(tabs)/explore")}
+                  />
+                  <GSButton
+                    label="Use"
+                    icon="arrow-forward"
+                    onPress={() => router.push("/(tabs)/profile")}
+                  />
+                </View>
+              </GSCard>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
