@@ -46,7 +46,7 @@ jobs:
 
       - name: Build dev client (Debug)
         run: |
-          EXPO_USE_DEV_CLIENT=1 npx expo run:ios --configuration Debug --scheme testapp --no-build-cache --no-bundler --port $METRO_PORT --non-interactive
+          EXPO_USE_DEV_CLIENT=1 npx expo run:ios --configuration Debug --scheme testapp --no-build-cache --no-bundler --non-interactive
 
       - name: Start Metro bundler
         run: |
