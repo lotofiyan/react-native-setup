@@ -26,7 +26,9 @@ jobs:
 
       - name: Install native tooling
         run: |
-          brew install --quiet watchman applesimutils
+          brew install --quiet watchman
+          brew tap wix/brew
+          brew install --quiet applesimutils
 
       - name: Install dependencies
         run: npm ci
