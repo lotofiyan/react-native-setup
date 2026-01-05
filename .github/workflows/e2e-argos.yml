@@ -44,8 +44,31 @@ jobs:
         run: |
           set -e
 
-          RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "import json,sys; d=json.load(sys.stdin); print([r['identifier'] for r in d['runtimes'] if r.get('isAvailable')][-1])")
-          DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "import json,sys; d=json.load(sys.stdin); print([t['identifier'] for t in d['devicetypes'] if 'iPhone 15' in t['name'] or 'iPhone 14' in t['name']][-1])")
+          # Pick the newest available iOS runtime on the runner
+          RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          ios=[r for r in d['runtimes'] if r.get('isAvailable') and r.get('platform')=='iOS']
+          ios_sorted=sorted(ios, key=lambda r: r.get('version','0'))
+          print(ios_sorted[-1]['identifier'])
+          ")
+
+          # Pick a safe, widely-compatible iPhone device type (avoid hardcoding iPhone 15)
+          # Prefer: iPhone 14 -> iPhone 13 -> iPhone 12 -> first iPhone found
+          DEVICE_TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          iph=[t for t in d['devicetypes'] if 'iPhone' in t['name']]
+          preferred=['iPhone 14','iPhone 13','iPhone 12','iPhone 11']
+          by_name={t['name']:t['identifier'] for t in iph}
+          for p in preferred:
+            if p in by_name:
+              print(by_name[p]); sys.exit(0)
+          print(iph[0]['identifier'])
+          ")
+
+          echo "Using runtime: $RUNTIME"
+          echo "Using device type: $DEVICE_TYPE"
 
           UDID=$(xcrun simctl create "Detox-iPhone" "$DEVICE_TYPE" "$RUNTIME")
           echo "SIMULATOR_UDID=$UDID" >> $GITHUB_ENV
