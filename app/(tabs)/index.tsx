@@ -21,7 +21,12 @@ const quickActions = [
     icon: "person-circle-outline",
     route: "/(tabs)/profile",
   },
-  { label: "Auth flows", icon: "log-in-outline", route: "/auth/login" },
+  {
+    label: "Auth flows",
+    icon: "log-in-outline",
+    route: "/auth/login",
+    id: "cta-go-to-auth",
+  },
 ];
 
 const flows = [
@@ -58,15 +63,19 @@ export default function HomeScreen() {
         contentContainerStyle={{
           paddingBottom: 32,
         }}
+        testID="home-scroll"
       >
         <View className="gap-5">
           <View className="flex-row items-center justify-between">
             <View className="gap-1">
-              <Text className="text-2xl font-semibold text-typography-900">
+              <Text
+                testID="home-title"
+                className="text-2xl font-semibold text-typography-900"
+              >
                 Gluestack Starter
               </Text>
               <Text className="text-base text-typography-500">
-                Curated screens ready to drop in
+                Curated screens ready
               </Text>
             </View>
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 shadow-hard-2">
@@ -92,6 +101,7 @@ export default function HomeScreen() {
                 variant="outline"
                 textClassName="text-white"
                 className="border-white/50 bg-white/10"
+                testID="cta-browse-components"
                 onPress={() => router.push("/(tabs)/explore")}
               />
               <GSButton
@@ -171,6 +181,7 @@ export default function HomeScreen() {
                   key={action.label}
                   icon={action.icon as keyof typeof Ionicons.glyphMap}
                   label={action.label}
+                  testID={action?.id}
                   onPress={() => router.push(action.route)}
                 />
               ))}

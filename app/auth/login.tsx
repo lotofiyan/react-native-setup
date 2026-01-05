@@ -42,6 +42,7 @@ export default function LoginScreen() {
                   placeholderTextColor="#9CA3AF"
                   autoCapitalize="none"
                   keyboardType="email-address"
+                  testID="input-email"
                   className="rounded-xl border border-outline-100 bg-background-0 px-4 py-3 text-base text-typography-900"
                 />
               </View>
@@ -68,6 +69,7 @@ export default function LoginScreen() {
               <GSButton
                 onPress={() => router.push("/")}
                 label="Sign in"
+                testID="sign-in"
                 icon="log-in-outline"
               />
               <View className="flex-row items-center justify-center gap-2">

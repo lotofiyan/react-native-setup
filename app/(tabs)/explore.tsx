@@ -50,6 +50,7 @@ export default function ComponentsScreen() {
                   value={email}
                   onChangeText={setEmail}
                   placeholder="you@example.com"
+                  testID="input-email"
                   placeholderTextColor="#9CA3AF"
                   className="rounded-xl border border-outline-100 bg-background-0 px-4 py-3 text-base text-typography-900"
                 />

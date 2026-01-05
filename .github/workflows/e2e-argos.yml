@@ -1,0 +1,68 @@
+name: e2e-ios-visual-regression
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ios-e2e-argos:
+    runs-on: macos-14
+    timeout-minutes: 40
+    env:
+      NODE_VERSION: 20
+      ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
+      DETOX_CONFIGURATION: ios.sim.debug
+      METRO_PORT: 8081
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install native tooling
+        run: |
+          brew install --quiet watchman applesimutils
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Boot simulator
+        run: |
+          SIM_DEVICE="iPhone 15"
+          xcrun simctl bootstatus "$SIM_DEVICE" -b || xcrun simctl boot "$SIM_DEVICE"
+
+      - name: Build dev client (Debug)
+        run: |
+          EXPO_USE_DEV_CLIENT=1 npx expo run:ios --configuration Debug --scheme testapp --no-build-cache --port $METRO_PORT --non-interactive
+
+      - name: Start Metro bundler
+        run: |
+          npx expo start --dev-client --port $METRO_PORT --clear --non-interactive &
+          echo $! > /tmp/metro_pid
+          # give Metro a moment to warm up
+          sleep 20
+
+      - name: Run Detox E2E and upload to Argos
+        run: npm run e2e:ios:argos
+
+      - name: Upload artifacts (screenshots/logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: argos-artifacts
+          path: |
+            __argos__/**
+            *.log
+            *.txt
+
+      - name: Stop Metro
+        if: always()
+        run: |
+          if [ -f /tmp/metro_pid ]; then
+            kill $(cat /tmp/metro_pid) || true
+          fi
