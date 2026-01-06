@@ -2,18 +2,26 @@ name: e2e-ios-visual-regression
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  # (optional but recommended) build a baseline on main so PRs can diff against it
+  push:
+    branches: [main]
 
 jobs:
   ios-e2e-argos:
     runs-on: macos-14
-    timeout-minutes: 40
+    timeout-minutes: 60
+
     env:
       NODE_VERSION: 20
       ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
       DETOX_CONFIGURATION: ios.sim.debug
       METRO_PORT: 8081
+      DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      REACT_NATIVE_PACKAGER_HOSTNAME: "127.0.0.1"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,32 +31,90 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "${DEVELOPER_DIR}"
+          xcodebuild -version
 
       - name: Install native tooling
         run: |
-          brew install --quiet watchman applesimutils
+          brew install --quiet watchman
+          brew tap wix/brew
+          brew install --quiet applesimutils
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Boot simulator
-        run: |
-          SIM_DEVICE="iPhone 15"
-          xcrun simctl bootstatus "$SIM_DEVICE" -b || xcrun simctl boot "$SIM_DEVICE"
+      # Speed-ups (best effort). If you don’t commit /ios, this still helps after first run.
+      - name: Cache CocoaPods + DerivedData
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Pods
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+            ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-pods-xcode-${{ hashFiles('**/Podfile.lock', 'package-lock.json', 'app.json', 'app.config.*') }}
 
-      - name: Build dev client (Debug)
+      - name: Create & boot simulator (compatible)
+        id: sim
         run: |
-          EXPO_USE_DEV_CLIENT=1 npx expo run:ios --configuration Debug --scheme testapp --no-build-cache --port $METRO_PORT --non-interactive
+          set -e
 
-      - name: Start Metro bundler
+          RUNTIME_ID="$(xcrun simctl list runtimes | sed -n 's/.*(com.apple.CoreSimulator.SimRuntime.iOS-[0-9-]*).*/\1/p' | tail -n 1)"
+          if [ -z "$RUNTIME_ID" ]; then
+            echo "No iOS runtime found on runner."
+            xcrun simctl list runtimes
+            exit 1
+          fi
+
+          # Prefer iPhone 15, fallback to iPhone 14
+          DEVTYPE_ID="$(xcrun simctl list devicetypes | sed -n 's/.*(com.apple.CoreSimulator.SimDeviceType.iPhone-15).*/\1/p' | head -n 1)"
+          if [ -z "$DEVTYPE_ID" ]; then
+            DEVTYPE_ID="$(xcrun simctl list devicetypes | sed -n 's/.*(com.apple.CoreSimulator.SimDeviceType.iPhone-14).*/\1/p' | head -n 1)"
+          fi
+
+          SIM_NAME="Detox-iPhone"
+          UDID="$(xcrun simctl create "$SIM_NAME" "$DEVTYPE_ID" "$RUNTIME_ID" || true)"
+          if [ -z "$UDID" ]; then
+            UDID="$(xcrun simctl list devices | sed -n "s/.*$SIM_NAME *(\\([0-9A-F-]*\\)).*/\\1/p" | head -n 1)"
+          fi
+
+          echo "SIMULATOR_UDID=$UDID" >> $GITHUB_ENV
+          echo "Created/using simulator: $SIM_NAME ($UDID)"
+
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Start Metro bundler (background)
         run: |
-          npx expo start --dev-client --port $METRO_PORT --clear --non-interactive &
+          npx expo start --dev-client --port $METRO_PORT --clear --non-interactive > metro.log 2>&1 &
           echo $! > /tmp/metro_pid
-          # give Metro a moment to warm up
-          sleep 20
 
-      - name: Run Detox E2E and upload to Argos
-        run: npm run e2e:ios:argos
+          # Wait for Metro to be ready
+          for i in {1..60}; do
+            if curl -fsS "http://127.0.0.1:${METRO_PORT}/status" | grep -q "packager-status:running"; then
+              echo "Metro is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Metro did not become ready in time"
+          tail -n 200 metro.log || true
+          exit 1
+
+      - name: Build app for Detox (must NOT start Metro)
+        run: |
+          export DETOX_DEVICE_ID="$SIMULATOR_UDID"
+          npx detox build -c $DETOX_CONFIGURATION
+
+      - name: Run Detox E2E + upload to Argos
+        run: |
+          export DETOX_DEVICE_ID="$SIMULATOR_UDID"
+          npm run e2e:ios:argos
 
       - name: Upload artifacts (screenshots/logs)
         if: always()
@@ -57,12 +123,16 @@ jobs:
           name: argos-artifacts
           path: |
             __argos__/**
+            metro.log
             *.log
             *.txt
 
-      - name: Stop Metro
+      - name: Cleanup
         if: always()
         run: |
           if [ -f /tmp/metro_pid ]; then
             kill $(cat /tmp/metro_pid) || true
+          fi
+          if [ -n "${SIMULATOR_UDID:-}" ]; then
+            xcrun simctl shutdown "$SIMULATOR_UDID" || true
           fi

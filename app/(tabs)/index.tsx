@@ -75,6 +75,9 @@ export default function HomeScreen() {
                 Gluestack Starter
               </Text>
               <Text className="text-base text-typography-500">
+                Staging mode
+              </Text>
+              <Text className="text-base font-semibold text-typography-500">
                 Curated screens ready
               </Text>
             </View>

@@ -8,28 +8,36 @@
  * Adjust them if your app name or build output differs.
  */
 
-const os = require('os');
-const path = require('path');
+const os = require("os");
+const path = require("path");
 
-const derivedDataDir = path.join(os.homedir(), 'Library/Developer/Xcode/DerivedData');
+const derivedDataDir = path.join(
+  os.homedir(),
+  "Library/Developer/Xcode/DerivedData"
+);
 
 function resolveIosBinaryPath() {
   const candidates = [];
 
   try {
-    const entries = require('fs')
+    const entries = require("fs")
       .readdirSync(derivedDataDir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && entry.name.startsWith('testapp-'));
+      .filter(
+        (entry) => entry.isDirectory() && entry.name.startsWith("testapp-")
+      );
 
     for (const entry of entries) {
       const fullPath = path.join(derivedDataDir, entry.name);
-      const mtime = require('fs').statSync(fullPath).mtimeMs;
-      const appPath = path.join(fullPath, 'Build/Products/Debug-iphonesimulator/testapp.app');
-      const infoPath = path.join(appPath, 'Info.plist');
+      const mtime = require("fs").statSync(fullPath).mtimeMs;
+      const appPath = path.join(
+        fullPath,
+        "Build/Products/Debug-iphonesimulator/testapp.app"
+      );
+      const infoPath = path.join(appPath, "Info.plist");
 
       candidates.push({
         appPath,
-        hasInfoPlist: require('fs').existsSync(infoPath),
+        hasInfoPlist: require("fs").existsSync(infoPath),
         mtime,
       });
     }
@@ -60,49 +68,51 @@ const iosBinaryPath = resolveIosBinaryPath();
 module.exports = {
   testRunner: {
     args: {
-      $0: 'jest',
-      config: 'e2e/jest.config.js',
+      $0: "jest",
+      config: "e2e/jest.config.js",
     },
   },
   apps: {
-    'ios.sim.debug': {
-      type: 'ios.app',
+    "ios.sim.debug": {
+      type: "ios.app",
       binaryPath:
         iosBinaryPath ||
         path.join(
           derivedDataDir,
-          'testapp-*/Build/Products/Debug-iphonesimulator/testapp.app'
+          "testapp-*/Build/Products/Debug-iphonesimulator/testapp.app"
         ),
-      build: 'EXPO_USE_DEV_CLIENT=1 npx expo run:ios --configuration Debug --scheme testapp --no-build-cache',
+      // build:
+      //   "EXPO_USE_DEV_CLIENT=1 npx expo run:ios --configuration Debug --scheme testapp --no-build-cache",
+      build: `EXPO_USE_DEV_CLIENT=1 npx expo run:ios --configuration Debug --scheme testapp --no-bundler`,
     },
-    'android.emu.debug': {
-      type: 'android.apk',
-      binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
-      build: 'EXPO_USE_DEV_CLIENT=1 npx expo run:android --variant debug',
+    "android.emu.debug": {
+      type: "android.apk",
+      binaryPath: "android/app/build/outputs/apk/debug/app-debug.apk",
+      build: "EXPO_USE_DEV_CLIENT=1 npx expo run:android --variant debug",
     },
   },
   devices: {
-    'ios.sim': {
-      type: 'ios.simulator',
+    "ios.sim": {
+      type: "ios.simulator",
       device: {
-        type: 'iPhone 15',
+        type: "iPhone 15",
       },
     },
-    'android.emu': {
-      type: 'android.emulator',
+    "android.emu": {
+      type: "android.emulator",
       device: {
-        avdName: 'Pixel_6_API_34',
+        avdName: "Pixel_6_API_34",
       },
     },
   },
   configurations: {
-    'ios.sim.debug': {
-      device: 'ios.sim',
-      app: 'ios.sim.debug',
+    "ios.sim.debug": {
+      device: "ios.sim",
+      app: "ios.sim.debug",
     },
-    'android.emu.debug': {
-      device: 'android.emu',
-      app: 'android.emu.debug',
+    "android.emu.debug": {
+      device: "android.emu",
+      app: "android.emu.debug",
     },
   },
 };
